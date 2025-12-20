@@ -1,5 +1,5 @@
 import curses
-from .input import prompt_input
+from input import prompt_input
 
 
 def Box(stdscr, y, x, h, w, title=None):
