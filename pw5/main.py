@@ -1,0 +1,90 @@
+import curses
+from domains import Manager
+from input import addStudents, addCourses, inputMarks
+from output import displayStudents, displayCourses, displayMarks, displayGPA
+from persistence import (
+    check_dat_exists, decompress_from_dat,
+    write_students, write_courses, write_marks, compress_to_dat
+)
+
+
+def menu(stdscr, manager):
+    curses.curs_set(0)
+    current = 0
+    options = [
+        "Add students",
+        "Add courses",
+        "Input marks for a course",
+        "Display students",
+        "Display courses",
+        "Display marks for a course",
+        "Sort students by GPA (desc) and show",
+        "Exit",
+    ]
+    while True:
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+        stdscr.addstr(1, 2, "Student Manager (curses UI)")
+        for i, opt in enumerate(options):
+            marker = '>' if i == current else ' '
+            stdscr.addstr(3 + i, 4, f"{marker} {opt}")
+        stdscr.addstr(h-2, 2, "Use Up/Down to move, Enter to select")
+        key = stdscr.getch()
+        if key in [curses.KEY_UP, ord('k')]:
+            current = (current - 1) % len(options)
+        elif key in [curses.KEY_DOWN, ord('j')]:
+            current = (current + 1) % len(options)
+        elif key in [curses.KEY_ENTER, 10, 13]:
+            if current == 0:
+                addStudents(stdscr, manager)
+            elif current == 1:
+                addCourses(stdscr, manager)
+            elif current == 2:
+                inputMarks(stdscr, manager)
+            elif current == 3:
+                displayStudents(stdscr, manager)
+            elif current == 4:
+                displayCourses(stdscr, manager)
+            elif current == 5:
+                displayMarks(stdscr, manager)
+            elif current == 6:
+                manager.sortGPA()
+                displayGPA(stdscr, manager, title="Students sorted by GPA")
+            elif current == 7:
+                break
+        elif key in [ord('q'), 27]:
+            break
+
+
+def main(stdscr):
+    manager = Manager()
+    # Load data if students.dat exists
+    if check_dat_exists():
+        stdscr.clear()
+        stdscr.addstr(1, 2, "Found students.dat - loading data...")
+        stdscr.refresh()
+        stdscr.getch()
+        decompress_from_dat()
+        load_students(manager)
+        load_courses(manager)
+        load_marks(manager)
+    menu(stdscr, manager)
+    # Save and compress before exit
+    stdscr.clear()
+    stdscr.addstr(1, 2, "Saving and compressing data...")
+    stdscr.refresh()
+    write_students(manager)
+    write_courses(manager)
+    write_marks(manager)
+    compress_to_dat()
+    stdscr.addstr(3, 2, "Data saved to students.dat. Press any key to exit.")
+    stdscr.refresh()
+    stdscr.getch()
+
+
+# Import load functions for main
+from persistence import load_students, load_courses, load_marks
+
+
+if __name__ == '__main__':
+    curses.wrapper(main)
